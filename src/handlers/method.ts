@@ -18,6 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../config/firebase';
+import { calculateServiceIndicators, calculateBrakeIndicators } from '../helpers/serviceIndicators';
 
 type Role = 'driver' | 'ops' | 'owner' | 'tour_manager';
 
@@ -419,8 +420,60 @@ export const listTours = async (req: Request, res: Response): Promise<Response |
         return res.status(403).json({ message: 'Forbidden', status: 0, data: null });
     }
 
-    const data = await queryDocumentsByFilters('tours', filters);
-    res.status(200).json({ message: 'Tours fetched', status: 1, data });
+    const tours = await queryDocumentsByFilters('tours', filters);
+    
+    // Calculate service indicators for tours with vehicles
+    const toursWithIndicators = await Promise.all(
+        tours.map(async (tour: any) => {
+            if (!tour.vehicleId) {
+                return tour;
+            }
+
+            // Get vehicle data
+            const vehicle = await getDocument('vehicles', tour.vehicleId);
+            if (!vehicle) {
+                return tour;
+            }
+
+            // Get all tours for this vehicle to calculate cumulative km
+            const vehicleTours = await queryDocumentsByFilters('tours', [
+                { field: 'vehicleId', op: '==', value: tour.vehicleId },
+                { field: 'status', op: 'in', value: ['planned', 'confirmed', 'active'] }
+            ]);
+
+            const currentOdometer = vehicle.latest_odometer || vehicle.odometer || 0;
+            const serviceInterval = vehicle.vehicleMaintenanceIntervalsKm?.service || 15000;
+            const brakeInterval = 50000; // Default brake interval
+            const lastServiceOdo = vehicle.lastServiceOdo || vehicle.odometer || 0;
+            const lastBrakeOdo = vehicle.lastBrakeOdo || vehicle.odometer || 0;
+            
+            const nextServiceThreshold = lastServiceOdo + serviceInterval;
+            const nextBrakeThreshold = lastBrakeOdo + brakeInterval;
+
+            // Calculate indicators
+            const serviceIndicators = calculateServiceIndicators(
+                vehicleTours as any[],
+                currentOdometer,
+                nextServiceThreshold,
+                lastServiceOdo
+            );
+
+            const brakeIndicators = calculateBrakeIndicators(
+                vehicleTours as any[],
+                currentOdometer,
+                nextBrakeThreshold,
+                lastBrakeOdo
+            );
+
+            return {
+                ...tour,
+                serviceIndicator: serviceIndicators[tour.tourId] || { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
+                brakeIndicator: brakeIndicators[tour.tourId] || { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer }
+            };
+        })
+    );
+    
+    res.status(200).json({ message: 'Tours fetched', status: 1, data: toursWithIndicators });
 };
 
 export const getTourById = async (req: Request, res: Response): Promise<Response | void> => {

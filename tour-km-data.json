@@ -1,0 +1,37 @@
+{
+  "ZAPAN": {
+    "code": "ZAPAN",
+    "name": "Panorama",
+    "km": 5900
+  },
+  "ZAKRU": {
+    "code": "ZAKRU",
+    "name": "Kruger",
+    "km": 3300
+  },
+  "ZAAD": {
+    "code": "ZAAD",
+    "name": "Addo North",
+    "km": 2600
+  },
+  "ZAADS": {
+    "code": "ZAADS",
+    "name": "Addo South",
+    "km": 3000
+  },
+  "ZAOUT": {
+    "code": "ZAOUT",
+    "name": "Outeniqua",
+    "km": 2500
+  },
+  "ZARAI": {
+    "code": "ZARAI",
+    "name": "Rainbow North",
+    "km": 3000
+  },
+  "ZARAIS": {
+    "code": "ZARAIS",
+    "name": "Rainbow South",
+    "km": 3000
+  }
+}
