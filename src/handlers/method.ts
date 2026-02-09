@@ -153,6 +153,74 @@ export const createTour = async (req: Request, res: Response): Promise<Response 
         });
     }
 
+    // Send email notifications if tour has assignments
+    if ((vehicleId || driverId) && new Date(startDate) > new Date()) {
+        // Notify tour managers
+        const tourManagers = await queryDocumentsByFilters('users', [
+            { field: 'organisationId', op: '==', value: user.organisationId },
+            { field: 'role', op: '==', value: 'tour_manager' }
+        ]);
+        const managerEmails = tourManagers.filter((u: any) => u.email).map((u: any) => u.email);
+        
+        // Build assignment details
+        let assignmentDetails = '';
+        let assignedVehicle = null;
+        let assignedDriver = null;
+        
+        if (vehicleId) {
+            assignedVehicle = await getDocument('vehicles', vehicleId);
+            assignmentDetails += `Vehicle: ${assignedVehicle?.licenceNumber || vehicleId}\n`;
+        }
+        if (driverId) {
+            assignedDriver = await getDocument('users', driverId);
+            assignmentDetails += `Driver: ${assignedDriver?.username || driverId}\n`;
+        }
+
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            // Send to tour managers
+            if (managerEmails.length > 0) {
+                const managerMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: managerEmails.join(','),
+                    subject: `New Tour Assignment: ${tour_reference}`,
+                    text: `A new tour has been created with assignments:\n\nTour: ${tour_name} (${tour_reference})\nSupplier: ${supplier}\nStart Date: ${new Date(startDate).toLocaleDateString()}\nEnd Date: ${new Date(endDate).toLocaleDateString()}\nPAX: ${pax || 'N/A'}\n\nAssignments:\n${assignmentDetails}\n\nCreated by: ${user.username}`
+                };
+                
+                try {
+                    await transporter.sendMail(managerMailOptions);
+                    console.log('Email notification sent to tour managers:', managerEmails.join(', '));
+                } catch (error) {
+                    console.error('Error sending email to tour managers:', error);
+                }
+            }
+
+            // Send to assigned driver
+            if (driverId && assignedDriver?.email) {
+                const driverMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: assignedDriver.email,
+                    subject: `New Tour Assignment: ${tour_reference}`,
+                    text: `You have been assigned to a new tour:\n\nTour: ${tour_name} (${tour_reference})\nSupplier: ${supplier}\nStart Date: ${new Date(startDate).toLocaleDateString()}\nEnd Date: ${new Date(endDate).toLocaleDateString()}\nPAX: ${pax || 'N/A'}\n${vehicleId && assignedVehicle ? `\nVehicle: ${assignedVehicle.licenceNumber}` : ''}\n\nPlease review the tour details in the app.\n\nAssigned by: ${user.username}`
+                };
+                
+                try {
+                    await transporter.sendMail(driverMailOptions);
+                    console.log('Email notification sent to driver:', assignedDriver.email);
+                } catch (error) {
+                    console.error('Error sending email to driver:', error);
+                }
+            }
+        }
+    }
+
     res.status(201).json({ message: 'Tour created', status: 1, data: { id: tourRef.id } });
 };
 
@@ -188,6 +256,7 @@ export const updateTour = async (req: Request, res: Response): Promise<Response 
     }
 
     const oldVehicleId = tour.vehicleId;
+    const oldDriverId = tour.driverId;
 
     const updates: Record<string, any> = {};
     if (driverId !== undefined) updates.driverId = driverId;
@@ -231,14 +300,19 @@ export const updateTour = async (req: Request, res: Response): Promise<Response 
     updates.updatedAt = new Date().toISOString();
     await updateDocument('tours', tourId, updates);
 
-    // Send email notification if vehicle assignment changed for future tour
-    if (vehicleId !== undefined && vehicleId !== oldVehicleId && new Date(tour.startDate) > new Date()) {
-        const operators = await queryDocumentsByFilters('users', [
+    // Send email notifications if vehicle or driver assignment changed for future tour
+    const assignmentChanged = (vehicleId !== undefined && vehicleId !== oldVehicleId) || 
+                              (driverId !== undefined && driverId !== oldDriverId);
+    
+    if (assignmentChanged && new Date(tour.startDate) > new Date()) {
+        // Get tour managers to notify
+        const tourManagers = await queryDocumentsByFilters('users', [
             { field: 'organisationId', op: '==', value: user.organisationId },
-            { field: 'role', op: 'in', value: ['ops', 'owner'] }
+            { field: 'role', op: '==', value: 'tour_manager' }
         ]);
-        const emails = operators.filter((u: any) => u.email).map((u: any) => u.email);
-        if (emails.length > 0 && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        const managerEmails = tourManagers.filter((u: any) => u.email).map((u: any) => u.email);
+        
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -246,17 +320,74 @@ export const updateTour = async (req: Request, res: Response): Promise<Response 
                     pass: process.env.EMAIL_PASS
                 }
             });
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: emails.join(','),
-                subject: 'Tour Vehicle Assignment Changed',
-                text: `The vehicle assignment for tour "${tour.tour_name}" (${tour.tour_reference}) has been changed from ${oldVehicleId ? 'vehicle ' + oldVehicleId : 'unassigned'} to ${vehicleId ? 'vehicle ' + vehicleId : 'unassigned'}.`
-            };
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent to operators');
-            } catch (error) {
-                console.error('Error sending email:', error);
+
+            // Build notification message
+            let changeDetails = '';
+            let oldVehicle = null;
+            let newVehicle = null;
+            let oldDriver = null;
+            let newDriver = null;
+            
+            if (vehicleId !== undefined && vehicleId !== oldVehicleId) {
+                oldVehicle = oldVehicleId ? await getDocument('vehicles', oldVehicleId) : null;
+                newVehicle = vehicleId ? await getDocument('vehicles', vehicleId) : null;
+                changeDetails += `Vehicle: ${oldVehicle?.licenceNumber || 'Unassigned'} → ${newVehicle?.licenceNumber || 'Unassigned'}\n`;
+            }
+            if (driverId !== undefined && driverId !== oldDriverId) {
+                oldDriver = oldDriverId ? await getDocument('users', oldDriverId) : null;
+                newDriver = driverId ? await getDocument('users', driverId) : null;
+                changeDetails += `Driver: ${oldDriver?.username || 'Unassigned'} → ${newDriver?.username || 'Unassigned'}\n`;
+            }
+
+            // Send to tour managers
+            if (managerEmails.length > 0) {
+                const managerMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: managerEmails.join(','),
+                    subject: `Tour Assignment Update: ${tour.tour_reference}`,
+                    text: `A tour assignment has been updated:\n\nTour: ${tour.tour_name} (${tour.tour_reference})\nSupplier: ${tour.supplier}\nStart Date: ${new Date(tour.startDate).toLocaleDateString()}\n\nChanges:\n${changeDetails}\n\nUpdated by: ${user.username}`
+                };
+                
+                try {
+                    await transporter.sendMail(managerMailOptions);
+                    console.log('Email notification sent to tour managers:', managerEmails.join(', '));
+                } catch (error) {
+                    console.error('Error sending email to tour managers:', error);
+                }
+            }
+
+            // Send to newly assigned driver
+            if (driverId !== undefined && driverId !== oldDriverId && driverId && newDriver?.email) {
+                const driverMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: newDriver.email,
+                    subject: `Tour Assignment: ${tour.tour_reference}`,
+                    text: `You have been assigned to a tour:\n\nTour: ${tour.tour_name} (${tour.tour_reference})\nSupplier: ${tour.supplier}\nStart Date: ${new Date(tour.startDate).toLocaleDateString()}\nEnd Date: ${new Date(tour.endDate).toLocaleDateString()}\n${vehicleId && newVehicle ? `\nVehicle: ${newVehicle.licenceNumber}` : ''}\n\nPlease review the tour details in the app.\n\nAssigned by: ${user.username}`
+                };
+                
+                try {
+                    await transporter.sendMail(driverMailOptions);
+                    console.log('Email notification sent to driver:', newDriver.email);
+                } catch (error) {
+                    console.error('Error sending email to driver:', error);
+                }
+            }
+
+            // Notify old driver if they were unassigned
+            if (driverId !== undefined && oldDriverId && driverId !== oldDriverId && oldDriver?.email) {
+                const oldDriverMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: oldDriver.email,
+                    subject: `Tour Assignment Changed: ${tour.tour_reference}`,
+                    text: `You have been unassigned from a tour:\n\nTour: ${tour.tour_name} (${tour.tour_reference})\nSupplier: ${tour.supplier}\nStart Date: ${new Date(tour.startDate).toLocaleDateString()}\n\nThe tour has been reassigned to another driver.\n\nUpdated by: ${user.username}`
+                };
+                
+                try {
+                    await transporter.sendMail(oldDriverMailOptions);
+                    console.log('Email notification sent to previous driver:', oldDriver.email);
+                } catch (error) {
+                    console.error('Error sending email to previous driver:', error);
+                }
             }
         }
     }
