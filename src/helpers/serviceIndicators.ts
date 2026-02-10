@@ -1,7 +1,3 @@
-import * as tourKmDataImport from '../../tour-km-data.json';
-
-const tourKmData = tourKmDataImport as any;
-
 export interface ServiceIndicator {
   color: 'green' | 'amber' | 'red';
   remainingKm: number;
@@ -28,37 +24,6 @@ export function getIndicatorColor(remainingKm: number): 'green' | 'amber' | 'red
 }
 
 /**
- * Get tour km from reference data
- * @param tourReference - Tour reference code (e.g., 'ZAPAN', 'Golf Tour', etc.)
- * @returns Kilometers for the tour, or 0 if not found
- */
-export function getTourKm(tourReference: string): number {
-  if (!tourReference) return 0;
-  
-  // Try exact match first
-  const tourData = tourKmData[tourReference];
-  if (tourData?.km) return tourData.km;
-  
-  // Try case-insensitive match
-  const upperRef = tourReference.toUpperCase();
-  for (const [key, value] of Object.entries(tourKmData)) {
-    if (key.toUpperCase() === upperRef) {
-      return (value as any).km || 0;
-    }
-  }
-  
-  // Try partial match (e.g., "Golf Tour" matches "GOLF")
-  for (const [key, value] of Object.entries(tourKmData)) {
-    if (upperRef.includes(key.toUpperCase()) || key.toUpperCase().includes(upperRef)) {
-      return (value as any).km || 0;
-    }
-  }
-  
-  // Default to 0 if no match found
-  return 0;
-}
-
-/**
  * Calculate all maintenance indicators for a list of tours
  * @param tours - Array of tours sorted by start date
  * @param currentOdometer - Current vehicle odometer reading
@@ -67,7 +32,7 @@ export function getTourKm(tourReference: string): number {
  * @returns Record of maintenance indicators for each tour
  */
 export function calculateMaintenanceIndicators(
-  tours: Array<{ id: string; tour_reference: string; startDate: string }>,
+  tours: Array<{ id: string; tour_reference: string; startDate: string; estimated_km?: number }>,
   currentOdometer: number,
   intervals: {
     tyres: number;
@@ -91,7 +56,8 @@ export function calculateMaintenanceIndicators(
   );
 
   for (const tour of sortedTours) {
-    const tourKm = getTourKm(tour.tour_reference);
+    // Use estimated_km from tour if available, otherwise default to 0
+    const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
     
     // Calculate remaining km for each maintenance type
