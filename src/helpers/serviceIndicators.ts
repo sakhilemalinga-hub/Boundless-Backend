@@ -95,7 +95,7 @@ export function calculateMaintenanceIndicators(
 
 // Keep backward compatibility
 export function calculateServiceIndicators(
-  tours: Array<{ id: string; tour_reference: string; startDate: string }>,
+  tours: Array<{ id: string; tour_reference: string; startDate: string; estimated_km?: number }>,
   currentOdometer: number,
   nextServiceThreshold: number,
   lastServiceOdo: number = 0
@@ -108,7 +108,7 @@ export function calculateServiceIndicators(
   );
 
   for (const tour of sortedTours) {
-    const tourKm = getTourKm(tour.tour_reference);
+    const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
     
     const kmSinceLastService = cumulativeKm - lastServiceOdo;
@@ -125,7 +125,7 @@ export function calculateServiceIndicators(
 }
 
 export function calculateBrakeIndicators(
-  tours: Array<{ id: string; tour_reference: string; startDate: string }>,
+  tours: Array<{ id: string; tour_reference: string; startDate: string; estimated_km?: number }>,
   currentOdometer: number,
   nextBrakeThreshold: number,
   lastBrakeOdo: number = 0
@@ -138,7 +138,7 @@ export function calculateBrakeIndicators(
   );
 
   for (const tour of sortedTours) {
-    const tourKm = getTourKm(tour.tour_reference);
+    const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
     
     const kmSinceLastBrake = cumulativeKm - lastBrakeOdo;
