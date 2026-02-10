@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../config/firebase';
-import { calculateServiceIndicators, calculateBrakeIndicators } from '../helpers/serviceIndicators';
+import { calculateMaintenanceIndicators } from '../helpers/serviceIndicators';
 
 type Role = 'driver' | 'ops' | 'owner' | 'tour_manager';
 
@@ -422,7 +422,7 @@ export const listTours = async (req: Request, res: Response): Promise<Response |
 
     const tours = await queryDocumentsByFilters('tours', filters);
     
-    // Calculate service indicators for tours with vehicles
+    // Calculate maintenance indicators for tours with vehicles
     const toursWithIndicators = await Promise.all(
         tours.map(async (tour: any) => {
             if (!tour.vehicleId) {
@@ -442,33 +442,47 @@ export const listTours = async (req: Request, res: Response): Promise<Response |
             ]);
 
             const currentOdometer = vehicle.latest_odometer || vehicle.odometer || 0;
-            const serviceInterval = vehicle.vehicleMaintenanceIntervalsKm?.service || 15000;
-            const brakeInterval = 50000; // Default brake interval
-            const lastServiceOdo = vehicle.lastServiceOdo || vehicle.odometer || 0;
-            const lastBrakeOdo = vehicle.lastBrakeOdo || vehicle.odometer || 0;
+            const intervals = {
+                tyres: vehicle.vehicleMaintenanceIntervalsKm?.tyres || 70000,
+                alignmentBalancing: vehicle.vehicleMaintenanceIntervalsKm?.alignmentBalancing || 8000,
+                service: vehicle.vehicleMaintenanceIntervalsKm?.service || 15000,
+                brakes: 50000 // Default brake interval
+            };
             
-            const nextServiceThreshold = lastServiceOdo + serviceInterval;
-            const nextBrakeThreshold = lastBrakeOdo + brakeInterval;
+            const lastServiceOdos = {
+                tyres: vehicle.lastTyresOdo || vehicle.odometer || 0,
+                wheels: vehicle.lastWheelsOdo || vehicle.odometer || 0,
+                service: vehicle.lastServiceOdo || vehicle.odometer || 0,
+                brakes: vehicle.lastBrakeOdo || vehicle.odometer || 0
+            };
 
-            // Calculate indicators
-            const serviceIndicators = calculateServiceIndicators(
+            // Calculate all maintenance indicators
+            const maintenanceIndicators = calculateMaintenanceIndicators(
                 vehicleTours as any[],
                 currentOdometer,
-                nextServiceThreshold,
-                lastServiceOdo
+                intervals,
+                lastServiceOdos
             );
 
-            const brakeIndicators = calculateBrakeIndicators(
-                vehicleTours as any[],
-                currentOdometer,
-                nextBrakeThreshold,
-                lastBrakeOdo
-            );
+            const tourIndicators = maintenanceIndicators[tour.id];
+            
+            // Debug logging
+            if (!tourIndicators) {
+                console.log(`[listTours] No indicators found for tour ${tour.id}`);
+                console.log(`[listTours] Available indicator keys:`, Object.keys(maintenanceIndicators));
+                console.log(`[listTours] Tour object:`, { id: tour.id, tourId: tour.tourId, tour_reference: tour.tour_reference });
+            } else {
+                console.log(`[listTours] Indicators for tour ${tour.id}:`, tourIndicators);
+            }
 
             return {
                 ...tour,
-                serviceIndicator: serviceIndicators[tour.tourId] || { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
-                brakeIndicator: brakeIndicators[tour.tourId] || { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer }
+                maintenanceIndicators: tourIndicators || {
+                    tyres: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
+                    wheels: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
+                    service: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
+                    brakes: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer }
+                }
             };
         })
     );

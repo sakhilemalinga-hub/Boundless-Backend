@@ -33,5 +33,25 @@
     "code": "ZARAIS",
     "name": "Rainbow South",
     "km": 3000
+  },
+  "GOLF": {
+    "code": "GOLF",
+    "name": "Golf Tour",
+    "km": 2800
+  },
+  "GARDEN": {
+    "code": "GARDEN",
+    "name": "Garden Route",
+    "km": 3500
+  },
+  "CAPE": {
+    "code": "CAPE",
+    "name": "Cape Town",
+    "km": 4200
+  },
+  "WINELANDS": {
+    "code": "WINELANDS",
+    "name": "Winelands",
+    "km": 2200
   }
 }
