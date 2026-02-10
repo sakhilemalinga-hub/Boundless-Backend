@@ -464,20 +464,9 @@ export const listTours = async (req: Request, res: Response): Promise<Response |
                 lastServiceOdos
             );
 
-            const tourIndicators = maintenanceIndicators[tour.id];
-            
-            // Debug logging
-            if (!tourIndicators) {
-                console.log(`[listTours] No indicators found for tour ${tour.id}`);
-                console.log(`[listTours] Available indicator keys:`, Object.keys(maintenanceIndicators));
-                console.log(`[listTours] Tour object:`, { id: tour.id, tourId: tour.tourId, tour_reference: tour.tour_reference });
-            } else {
-                console.log(`[listTours] Indicators for tour ${tour.id}:`, tourIndicators);
-            }
-
             return {
                 ...tour,
-                maintenanceIndicators: tourIndicators || {
+                maintenanceIndicators: maintenanceIndicators[tour.id] || {
                     tyres: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
                     wheels: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },
                     service: { color: 'green', remainingKm: 999999, cumulativeKm: currentOdometer },

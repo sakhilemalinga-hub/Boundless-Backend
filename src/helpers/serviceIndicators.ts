@@ -99,13 +99,6 @@ export function calculateMaintenanceIndicators(
     const serviceRemaining = (lastServiceOdos.service + intervals.service) - cumulativeKm;
     const brakesRemaining = (lastServiceOdos.brakes + intervals.brakes) - cumulativeKm;
     
-    console.log(`[calculateMaintenanceIndicators] Tour ${tour.id} (${tour.tour_reference}):`, {
-      tourKm,
-      cumulativeKm,
-      serviceRemaining,
-      serviceColor: getIndicatorColor(serviceRemaining)
-    });
-    
     indicators[tour.id] = {
       tyres: {
         color: getIndicatorColor(tyresRemaining),
