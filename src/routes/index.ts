@@ -44,6 +44,11 @@ import { getAssignedTask } from '../helpers/api';
 
 const router = Router();
 
+// Health check endpoint
+router.get('/health', (_, res) => {
+    res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 router.get('/secrets', (_, res) => {
     res.json({ success: true, BASE_URL: secrets?.BASE_URL });
 });
