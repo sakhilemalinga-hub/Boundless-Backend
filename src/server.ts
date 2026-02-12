@@ -45,15 +45,15 @@ ZAADD2026.02.15N	16/Feb/2026	22/Feb/2026	11
 ZAADD2026.02.15N	22/Feb/2026	02/03/2026	11 */
 
 const tours = [
-    { tourId: '1', tour_name: 'RAINBOW', tour_reference: 'ZARAI2026.01.24N', startDate: '2026-01-25', endDate: '2026-01-31', status: 'planned',pax:11 },
-    { tourId: '2', tour_name: 'RAINBOW', tour_reference: 'ZARAI2026.01.24S', startDate: '2026-02-16', endDate: '2026-02-22', status: 'planned',pax:11 },
-    { tourId: '3', tour_name: 'AADO', tour_reference: 'ZAADD2026.02.15N', startDate: '2026-02-22', endDate: '2026-02-28', status: 'planned',pax:11 },
-    { tourId: '4', tour_name: 'AADO', tour_reference: 'ZAADD2026.02.15N', startDate: '2026-02-22', endDate: '2026-02-28', status: 'planned',pax:11 },
+    { tourId: '1', tour_name: 'RAINBOW', tour_reference: 'ZARAI2026.01.24N', startDate: '2026-01-25', endDate: '2026-01-31', status: 'planned', pax: 11 },
+    { tourId: '2', tour_name: 'RAINBOW', tour_reference: 'ZARAI2026.01.24S', startDate: '2026-02-16', endDate: '2026-02-22', status: 'planned', pax: 11 },
+    { tourId: '3', tour_name: 'AADO', tour_reference: 'ZAADD2026.02.15N', startDate: '2026-02-22', endDate: '2026-02-28', status: 'planned', pax: 11 },
+    { tourId: '4', tour_name: 'AADO', tour_reference: 'ZAADD2026.02.15N', startDate: '2026-02-22', endDate: '2026-02-28', status: 'planned', pax: 11 },
 ];
 
 export const addTours = async () => {
     for (const tour of tours) {
-        await createData('tours', tour.tourId, {...tour,created_at: new Date(),updated_at: new Date(),supplier: 'Fairfield Tours - Bookings 2078',organisationId: 'org1' });
+        await createData('tours', tour.tourId, { ...tour, created_at: new Date(), updated_at: new Date(), supplier: 'Fairfield Tours - Bookings 2078', organisationId: 'org1' });
         console.log(`Tour ${tour.tourId} added`);
     }
 };

@@ -51,7 +51,7 @@ export function calculateMaintenanceIndicators(
   let cumulativeKm = currentOdometer;
 
   // Sort tours by start date
-  const sortedTours = [...tours].sort((a, b) => 
+  const sortedTours = [...tours].sort((a, b) =>
     new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
   );
 
@@ -59,13 +59,13 @@ export function calculateMaintenanceIndicators(
     // Use estimated_km from tour if available, otherwise default to 0
     const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
-    
+
     // Calculate remaining km for each maintenance type
     const tyresRemaining = (lastServiceOdos.tyres + intervals.tyres) - cumulativeKm;
     const wheelsRemaining = (lastServiceOdos.wheels + intervals.alignmentBalancing) - cumulativeKm;
     const serviceRemaining = (lastServiceOdos.service + intervals.service) - cumulativeKm;
     const brakesRemaining = (lastServiceOdos.brakes + intervals.brakes) - cumulativeKm;
-    
+
     indicators[tour.id] = {
       tyres: {
         color: getIndicatorColor(tyresRemaining),
@@ -103,17 +103,17 @@ export function calculateServiceIndicators(
   const indicators: Record<string, ServiceIndicator> = {};
   let cumulativeKm = currentOdometer;
 
-  const sortedTours = [...tours].sort((a, b) => 
+  const sortedTours = [...tours].sort((a, b) =>
     new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
   );
 
   for (const tour of sortedTours) {
     const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
-    
+
     const kmSinceLastService = cumulativeKm - lastServiceOdo;
     const remainingKm = nextServiceThreshold - kmSinceLastService;
-    
+
     indicators[tour.id] = {
       color: getIndicatorColor(remainingKm),
       remainingKm,
@@ -133,17 +133,17 @@ export function calculateBrakeIndicators(
   const indicators: Record<string, ServiceIndicator> = {};
   let cumulativeKm = currentOdometer;
 
-  const sortedTours = [...tours].sort((a, b) => 
+  const sortedTours = [...tours].sort((a, b) =>
     new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
   );
 
   for (const tour of sortedTours) {
     const tourKm = tour.estimated_km || 0;
     cumulativeKm += tourKm;
-    
+
     const kmSinceLastBrake = cumulativeKm - lastBrakeOdo;
     const remainingKm = nextBrakeThreshold - kmSinceLastBrake;
-    
+
     indicators[tour.id] = {
       color: getIndicatorColor(remainingKm),
       remainingKm,
@@ -155,4 +155,3 @@ export function calculateBrakeIndicators(
 }
 
 
- 
