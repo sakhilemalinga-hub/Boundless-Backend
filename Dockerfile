@@ -28,14 +28,22 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies (including dev dependencies for build)
+RUN npm ci && npm cache clean --force
 
 # Copy TypeScript configuration
 COPY tsconfig.json ./
+COPY tsconfig.build.json ./
 
 # Copy source code
 COPY src/ ./src/
+
+# Install TypeScript and build dependencies
+RUN npm install -g typescript
+RUN npm install --save-dev typescript @types/node
+
+# Build the application
+RUN npm run build
 
 # Copy PDF templates and other necessary files
 COPY proof.pdf ./
@@ -52,13 +60,6 @@ COPY files/capitec/input2.pdf ./files/capitec/
 RUN if [ -f "./files/fonts/arial-Bold.ttf" ] && [ ! -f "./files/fonts/Arial-Bold.ttf" ]; then \
       mv ./files/fonts/arial-Bold.ttf ./files/fonts/Arial-Bold.ttf; \
     fi
-
-# Install TypeScript and build dependencies
-RUN npm install -g typescript
-RUN npm install --save-dev typescript @types/node
-
-# Build the application
-RUN npm run build
 
 # Remove dev dependencies to reduce image size
 RUN npm prune --production

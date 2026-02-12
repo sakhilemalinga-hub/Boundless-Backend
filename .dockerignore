@@ -1,38 +1,57 @@
 # Node modules
 
-node_modules npm-debug.log* yarn-debug.log* yarn-error.log\*
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Test files
 
-test/ _.test.js _.test.ts jest.config.ts coverage/
+test/
+*.test.js
+*.test.ts
+jest.config.ts
+coverage/
 
 # Development files
 
-.env.local .env.development .env.test
+.env.local
+.env.development
+.env.test
 
 # IDE files
 
-.vscode/ .idea/ _.swp _.swo
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS files
 
-.DS_Store Thumbs.db
+.DS_Store
+Thumbs.db
 
 # Git
 
-.git/ .gitignore
+.git/
+.gitignore
 
 # Documentation
 
-README.md \*.md
+README.md
+*.md
 
 # Logs
 
-logs/ \*.log
+logs/
+*.log
 
 # Runtime data
 
-pids/ _.pid _.seed \*.pid.lock
+pids/
+*.pid
+*.seed
+*.pid.lock
 
 # Optional npm cache directory
 
@@ -48,7 +67,7 @@ jspm_packages/
 
 # TypeScript cache
 
-\*.tsbuildinfo
+*.tsbuildinfo
 
 # Optional REPL history
 
@@ -56,7 +75,7 @@ jspm_packages/
 
 # Output of 'npm pack'
 
-\*.tgz
+*.tgz
 
 # Yarn Integrity file
 
@@ -68,7 +87,8 @@ jspm_packages/
 
 # parcel-bundler cache (https://parceljs.org/)
 
-.cache .parcel-cache
+.cache
+.parcel-cache
 
 # next.js build output
 
@@ -104,7 +124,8 @@ jspm_packages/
 
 # Temporary files
 
-tmp/ temp/
+tmp/
+temp/
 
 # PM2 ecosystem file
 
@@ -112,25 +133,32 @@ ecosystem.config.js
 
 # SSL certificates (if any)
 
-\*.pem
+*.pem
 
 # Large files that might be in your project
 
 # Exclude most files but allow specific required files
 
-files/_ !files/statement.pdf !files/helvetica-light.ttf images/ _.png _.jpg _.jpeg
+files/_*
+!files/statement.pdf
+!files/helvetica-light.ttf
+images/
+*.png
+*.jpg
+*.jpeg
 
 # Exclude all PDFs except the template
 
-\*.pdf
+*.pdf
 
 # But include the required template files
 
-!proof.pdf !files/statement.pdf
+!proof.pdf
+!files/statement.pdf
 
 # Exclude all traineddata except required ones
 
-\*.traineddata
+*.traineddata
 
 # But include the required OCR data
 
