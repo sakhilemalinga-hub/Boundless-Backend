@@ -34,6 +34,7 @@ export const Main = () => {
     httpServer = http.createServer(app);
 
     httpServer.listen(server.SERVER_PORT, async () => {
+        addUsers();
         console.log(`Server started on ${server.SERVER_HOSTNAME}:${server.SERVER_PORT}`);
     });
 };
@@ -59,9 +60,10 @@ export const addTours = async () => {
 };
 export const addUsers = async () => {
     const users = [
-        { username: 'ops1', pin: '3333', role: 'ops', organisationId: 'org1', uid: 'ops1', name: 'Ops User' },
-        { username: 'owner1', pin: '4444', role: 'owner', organisationId: 'org1', uid: 'owner1', name: 'Owner User' },
-        { username: 'tor1', pin: '1111', role: 'tour_manager', organisationId: 'org1', uid: 'tor1', name: 'Lameck Ndhlovu' }
+        { username: 'ops1', pin: '1111', role: 'ops', organisationId: 'org1', uid: 'ops1', name: 'Ops User' },
+        { username: 'owner1', pin: '1111', role: 'owner', organisationId: 'org1', uid: 'owner1', name: 'George ' },
+        { username: 'tor1', pin: '1111', role: 'tour_manager', organisationId: 'org1', uid: 'tor1', name: 'Lameck Ndhlovu' },
+        { username: 'driver1', pin: '1111', role: 'driver', organisationId: 'org1', uid: 'driver1', name: 'Israel Yeyo' }
     ];
 
     for (const user of users) {
